@@ -230,6 +230,21 @@ class Core(tmt.utils.Common):
             verdict(None, "summary should not exceed 50 characters")
         return True
 
+    def has_link(self, target):
+        """ Whether object contains specified link """
+        if isinstance(target, Link):
+            link = target.get()
+        else:
+            link_parts = target.split(':', maxsplit=1)
+            if len(link_parts) == 1:
+                link = Link(link_parts[0]).get()[0]
+            else:
+                link = Link({link_parts[0]: link_parts[1]}).get()[0]
+        for candidate in self._metadata.get('link', []):
+            if link == candidate:
+                return True
+        return False
+
 
 Node = Core
 
@@ -1094,7 +1109,7 @@ class Tree(tmt.utils.Common):
             return self._custom_context
         return super()._fmf_context()
 
-    def _filters_conditions(self, nodes, filters, conditions):
+    def _filters_conditions(self, nodes, filters, conditions, links):
         """ Apply filters and conditions, return pruned nodes """
         result = []
         for node in nodes:
@@ -1124,6 +1139,15 @@ class Tree(tmt.utils.Common):
                     continue
             except fmf.utils.FilterError as error:
                 # Handle missing attributes as if filter failed
+                continue
+            # Links
+            try:
+                # Links are in OR relation
+                if links and all([not node.has_link(link_)
+                                 for link_ in links]):
+                    continue
+            except BaseException:
+                raise
                 continue
             result.append(node)
         return result
@@ -1159,13 +1183,15 @@ class Tree(tmt.utils.Common):
             names=None,
             filters=None,
             conditions=None,
-            unique=True):
+            unique=True,
+            links=None):
         """ Search available tests """
         # Handle defaults, apply possible command line options
         keys = (keys or []) + ['test']
         names = (names or []) + list(Test._opt('names', []))
         filters = (filters or []) + list(Test._opt('filters', []))
         conditions = (conditions or []) + list(Test._opt('conditions', []))
+        links = (links or []) + list(Test._opt('links', []))
 
         # Build the list and convert to objects
         # If duplicate test names are allowed, match test name/regexp one-by-one
@@ -1176,42 +1202,44 @@ class Tree(tmt.utils.Common):
                 tests.extend(
                     self._filters_conditions(
                         [Test(test) for test in self.tree.prune(keys=keys, names=[name])],
-                        filters, conditions))
+                        filters, conditions, links))
             return tests
         else:
             return self._filters_conditions(
                 [Test(test) for test in self.tree.prune(keys=keys, names=names)],
-                filters, conditions)
+                filters, conditions, links)
 
     def plans(self, keys=None, names=None, filters=None, conditions=None,
-              run=None):
+              run=None, links=None):
         """ Search available plans """
         # Handle defaults, apply possible command line options
         keys = (keys or []) + ['execute']
         names = (names or []) + list(Plan._opt('names', []))
         filters = (filters or []) + list(Plan._opt('filters', []))
         conditions = (conditions or []) + list(Plan._opt('conditions', []))
+        links = (links or []) + list(Plan._opt('links', []))
 
         # Build the list and convert to objects
         return self._filters_conditions(
             [Plan(plan, run=run)
                 for plan in self.tree.prune(keys=keys, names=names)],
-            filters, conditions)
+            filters, conditions, links)
 
     def stories(self, keys=None, names=None, filters=None, conditions=None,
-                whole=False):
+                whole=False, links=None):
         """ Search available stories """
         # Handle defaults, apply possible command line options
         keys = (keys or []) + ['story']
         names = (names or []) + list(Story._opt('names', []))
         filters = (filters or []) + list(Story._opt('filters', []))
         conditions = (conditions or []) + list(Story._opt('conditions', []))
+        links = (links or []) + list(Story._opt('links', []))
 
         # Build the list and convert to objects
         return self._filters_conditions(
             [Story(story) for story in self.tree.prune(
                 keys=keys, names=names, whole=whole)],
-            filters, conditions)
+            filters, conditions, links)
 
     @staticmethod
     def init(path, template, force, **kwargs):
@@ -1395,7 +1423,7 @@ class Run(tmt.utils.Common):
                 self._use_default_plan()
 
         # Filter plans by name unless specified on the command line
-        plan_options = ['names', 'filters', 'conditions', 'default']
+        plan_options = ['names', 'filters', 'conditions', 'links', 'default']
         if not any([Plan._opt(option) for option in plan_options]):
             self._plans = [
                 plan for plan in self.tree.plans(run=self)

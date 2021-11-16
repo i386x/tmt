@@ -102,12 +102,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 '--dist-git-type',
                 type=click.Choice(tmt.utils.get_distgit_handler_names()),
                 help='Use the provided DistGit handler instead of detection.'),
+            click.option('--link', metavar="REL_LINK", multiple=True,
+                         help="Filter by linked objects (in the form of [relation:]target)"),
             ] + super().options(how)
 
     def show(self):
         """ Show discover details """
         super().show(['url', 'ref', 'path', 'test',
-                      'filter', 'dist-git-source', 'dist-git-type'])
+                      'filter', 'dist-git-source', 'dist-git-type', 'link'])
 
     def wake(self):
         """ Wake up the plugin (override data with command line) """
@@ -134,7 +136,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
                 'modified-url',
                 'modified-ref',
                 'dist-git-source',
-                'dist-git-type']:
+                'dist-git-type',
+                'link']:
             value = self.opt(option)
             if value:
                 self.data[option] = value
@@ -231,6 +234,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
         names = list(tmt.base.Test._opt('names') or self.get('test', []))
         if names:
             self.info('names', fmf.utils.listed(names), 'green')
+        # Check the 'test --link' option first, then from discover
+        links = list(tmt.base.Test._opt('link') or self.get('link', []))
+        for link_ in links:
+            self.info('link', link_, 'green')
 
         # Filter only modified tests if requested
         modified_only = self.get('modified-only')
@@ -260,8 +267,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin):
             self._tests = []
             return
         tree = tmt.Tree(path=tree_path, context=self.step.plan._fmf_context())
-        self._tests = tree.tests(filters=filters, names=names,
-                                 conditions=["manual is False"], unique=False)
+        self._tests = tree.tests(
+            filters=filters,
+            names=names,
+            conditions=["manual is False"],
+            unique=False,
+            links=links)
 
         # Prefix tests and handle library requires
         for test in self._tests:
