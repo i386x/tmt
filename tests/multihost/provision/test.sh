@@ -13,7 +13,6 @@ rlJournalStart
     rlPhaseStartTest "Wrong provision"
         rlRun -s "tmt run $opt plan -n wrong provision finish" 2 "Names not unique"
         rlAssertGrep "must be unique" $rlRun_LOG
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Correct provision without roles"
@@ -34,7 +33,6 @@ rlJournalStart
         rlAssertGrep "2" lines
 
         rlRun "rm lines"
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Correct provision with roles"
@@ -59,7 +57,6 @@ rlJournalStart
         rlAssertGrep "4" lines
 
         rlRun "rm lines"
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup

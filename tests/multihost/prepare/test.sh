@@ -16,7 +16,6 @@ rlJournalStart
         rlAssertGrep "8 preparations applied" $rlRun_LOG
         rlRun "grep 'script: echo' $rlRun_LOG | wc -l > lines"
         rlAssertGrep "4" lines
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Run on a single guest"
@@ -26,7 +25,6 @@ rlJournalStart
         rlAssertGrep "on: server-one" $rlRun_LOG
         rlRun "grep 'script: echo' $rlRun_LOG | wc -l > lines"
         rlAssertGrep "1" lines
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Run on all guests with a role"
@@ -36,7 +34,6 @@ rlJournalStart
         rlAssertGrep "on: server" $rlRun_LOG
         rlRun "grep 'script: echo' $rlRun_LOG | wc -l > lines"
         rlAssertGrep "2" lines
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Combined case"
@@ -50,7 +47,6 @@ rlJournalStart
         rlAssertGrep "2" lines
         rlRun "grep 'Client one' $rlRun_LOG | wc -l > lines"
         rlAssertGrep "1" lines
-        rlRun "rm $rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup

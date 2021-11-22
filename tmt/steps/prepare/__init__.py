@@ -170,8 +170,10 @@ class PreparePlugin(tmt.steps.Plugin):
 
         return prepare
 
-    def go(self):
+    def go(self, guest):
         super().go()
         on = self.get('on')
         if on:
             self.info('on', on, 'green')
+        if self.step.plan.provision.is_multihost:
+            self.info('guest', guest.name, 'green')

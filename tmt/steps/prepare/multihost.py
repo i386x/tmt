@@ -49,7 +49,7 @@ class PrepareMultihost(tmt.steps.prepare.PreparePlugin):
 
     def go(self, guest):
         """ Prepare the guests """
-        super().go()
+        super().go(guest)
 
         self.debug('Exporting roles', level=2)
         for role, corresponding_guests in self.get('roles').items():

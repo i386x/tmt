@@ -1,3 +1,4 @@
+import collections
 import os
 import random
 import re
@@ -27,13 +28,20 @@ class Provision(tmt.steps.Step):
         """ Initialize provision step data """
         super().__init__(data, plan)
         # Check that the names are unique
-        names = {data.get('name') for data in self.data}
-        if len(self.data) > 1 and len(self.data) != len(names):
+        names = [data.get('name') for data in self.data]
+        names_count = collections.defaultdict(int)
+        for name in names:
+            names_count[name] += 1
+        if len(self.data) > 1 and len(self.data) != len(names_count):
+            duplicate = [k for k, v in names_count.items() if v > 1]
+            duplicate_string = ', '.join(duplicate)
             raise tmt.utils.GeneralError(
-                'Provision step names must be unique for multihost testing')
+                f"Provision step names must be unique for multihost testing. "
+                f"Duplicate names: {duplicate_string} in plan '{plan.name}'.")
         # List of provisioned guests and loaded guest data
         self._guests = []
         self._guest_data = {}
+        self.is_multihost = False
 
     def load(self, extra_keys=None):
         """ Load guest data from the workdir """
@@ -106,13 +114,16 @@ class Provision(tmt.steps.Step):
         # Provision guests
         self._guests = []
         save = True
+        self.is_multihost = sum([isinstance(plugin, ProvisionPlugin)
+                                for plugin in self.plugins()]) > 1
         try:
             for plugin in self.plugins():
                 try:
                     plugin.go()
                     if isinstance(plugin, ProvisionPlugin):
                         plugin.guest().details()
-                    self.info('')
+                    if self.is_multihost:
+                        self.info('')
                 finally:
                     if isinstance(plugin, ProvisionPlugin):
                         self._guests.append(plugin.guest())

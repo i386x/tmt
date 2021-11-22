@@ -157,7 +157,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin):
 
     def go(self, guest):
         """ Prepare the guests """
-        super().go()
+        super().go(guest)
         # Nothing to do in dry mode
         if self.opt('dry'):
             return
