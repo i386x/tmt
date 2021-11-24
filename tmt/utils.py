@@ -682,6 +682,9 @@ def _add_file_vars(result, filepath):
         raise GeneralError(
             f"Failed to load variables from '{filepath}': {exception}")
 
+    # Handle empty file as an empty environment
+    if file_vars is None:
+        return
     for name, value in file_vars.items():
         result[name] = str(value)
 
@@ -1157,6 +1160,9 @@ def parse_dotenv(content: str) -> Dict[str, str]:
 def parse_yaml(content: str) -> Dict[str, str]:
     """ Parse variables from yaml, ensure flat dictionary format """
     yaml_as_dict = YAML(typ="safe").load(content)
+    # Handle empty file as an empty environment
+    if yaml_as_dict is None:
+        return dict()
     if any(isinstance(val, dict) for val in yaml_as_dict.values()):
         raise GeneralError(
             "Can't set the environment from the nested yaml config. The "

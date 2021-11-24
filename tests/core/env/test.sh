@@ -55,6 +55,10 @@ rlJournalStart
                 done
             done
         rlPhaseEnd
+
+        rlPhaseStartTest "Empty environment file ($execute)"
+            rlRun "tmt run -r -e @empty.yaml"
+        rlPhaseEnd
     done
 
     rlPhaseStartCleanup
